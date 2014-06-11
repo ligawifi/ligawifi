@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "nameserver" $dns > /etc/resolv.conf
+echo "nameserver" $dns > /tmp/resolv.conf
+echo "nameserver" $dns > /tmp/resolv.conf.auto
+echo "nameserver" $dns > /tmp/resolv.conf.dhcp
+
+uci set network.lan.dns=$dns
+uci commit network

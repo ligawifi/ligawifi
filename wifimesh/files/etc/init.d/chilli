@@ -1,0 +1,47 @@
+#!/bin/sh /etc/rc.common
+# Copyright © 2011-2013 WiFi Mesh: New Zealand Ltd.
+# All rights reserved.
+
+START=99
+STOP=15
+
+. /etc/chilli/functions
+check_required
+
+start() {
+	echo "Starting chilli"
+	if [ ! -d "/var/lock/subsys" ]; then
+		mkdir /var/lock/subsys
+	fi
+	/sbin/modprobe tun >/dev/null 2>&1
+	if [ ! -d "/dev/net" ]; then
+		mkdir /dev/net
+	fi
+	cd /dev/net
+	mknod tun char 10 200
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+	writeconfig
+	radiusconfig
+	ifconfig br-lan 0.0.0.0
+	brctl stp br-wan on
+	sleep 1
+	/usr/sbin/chilli -c /etc/chilli.conf --uamhostname my.wifi-mesh.co.nz --dhcpradius
+	touch /var/lock/subsys/chilli
+}
+
+stop() {
+	echo "Stopping chilli"
+	chmod +x /var/run/chilli.tun0.sh
+	/var/run/chilli.tun0.sh
+	[ -f /var/run/chilli.pid ] && { 
+		kill $(cat /var/run/chilli.pid)
+		[ $? = 0 ] && {
+			rm -f /var/lock/subsys/chilli /var/run/chilli.pid 2>/dev/null
+		}
+	}
+	killall chilli
+}
+
+boot() {
+	start
+}
